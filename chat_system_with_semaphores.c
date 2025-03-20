@@ -30,7 +30,7 @@ SharedMemory* create_shared_memory() {
 void destroy_shared_memory(SharedMemory *sharedmem) {
     sem_destroy(&sharedmem->sem_parent);
     sem_destroy(&sharedmem->sem_child);
-    munmap(sharedmem, MESSAGE_SIZE);
+    munmap(sharedmem, sizeof(SharedMemory));
 }
 
 void child_process(SharedMemory *sharedmem) {
@@ -52,18 +52,16 @@ void child_process(SharedMemory *sharedmem) {
 void parent_process(SharedMemory *sharedmem) {
     while (1) {
         sem_wait(&sharedmem->sem_parent); 
+        if (strcmp(sharedmem->message, "exit") == 0) break;
 
+        printf("Parent received: %s\n", sharedmem->message);
     
         printf("Parent: ");
         fgets(sharedmem->message, MESSAGE_SIZE, stdin);
         sharedmem->message[strcspn(sharedmem->message, "\n")] = 0;
 
         sem_post(&sharedmem->sem_child);  
-        if (strcmp(sharedmem->message, "exit") == 0) break;
 
-   
-        sem_wait(&sharedmem->sem_parent);
-        printf("Parent received: %s\n", sharedmem->message);
     }
 
     sem_post(&sharedmem->sem_child);  
